@@ -22,6 +22,9 @@
     <button onclick="connect()">connect</button>
     <button onclick="disconnect()">disconnect</button>
 
+    <div>
+        <p class="error" id="error" style="color:red"></p>
+    </div>
     <div class="informations">
         <p>Socket ID : 
             <span id="socket_id"></span>
@@ -36,20 +39,18 @@
     <script>
         let socket;
         const input = document.getElementById("input");
-        const messages = document.getElementById("")
-        const socket_id_element = document.getElementById("socket_id");
+        const socketIdEle = document.getElementById("socket_id");
         const room_id_element = document.getElementById("room_id");
         const chatDiv = document.getElementById("chat")
+        const errorEle = document.getElementById("error");
 
         function connect(){
             socket = io('http://localhost:3000');
             socket.on('connect', () => {
-                console.log('Connected with ID:', socket.id);
-                socket_id_element.innerHTML = socket.id;
+                socketIdEle.innerHTML = socket.id;
             });
 
             socket.on('room_message',(data)=>{
-                console.log(data);
                 chatDiv.innerHTML += `
                 <div class="message">
                     <strong>${data.sender}:</strong> ${data.message}
@@ -59,7 +60,6 @@
         }
 
         function disconnect(){
-            console.log("User disconnected");
             socket_id_element.innerHTML = ""; 
             socket.disconnect();
         }
@@ -67,19 +67,29 @@
         function join_room(){
             room_id = input.value;
             socket.emit('join_room',room_id, (res)=>{
-                console.log(res);
+                if(!res.success){
+                    errorEle.textContent = res.error;
+                    cleanErrors(3000)
+                }
             });
-            console.log("Joining room ",room_id);
             room_id_element.innerHTML = room_id;
         }
 
         function send_message(){
             message = input.value;
             socket.emit('send_message', message , (res)=>{
-                console.log(res);
+                if(!res.success){
+                    errorEle.textContent = res.error;
+                    cleanErrors(3000)
+                }
             })
         }
-        
+
+        async function cleanErrors(time) {
+            setTimeout(() => {
+                errorEle.textContent = "";
+            }, time);
+        }
     </script>
 </body>
 </html>
