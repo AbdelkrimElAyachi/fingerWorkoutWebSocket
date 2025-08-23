@@ -1,17 +1,21 @@
 module.exports = (io, socket) => {
 
-    socket.on('send_message', (message, callback) => {
-        // if user not in a room return error
-        if(!current_room){
-            return callback({success:false, error : "Not in any room"});
-        }
-        // broadcas message to all members in the room
-        socket.to(current_room).emit('room_message',{
-            user_id: socket.id,
-            message,
-            timestamp : new Date()
-        });
-        callback({success:true, current_room})
-    });
+    socket.on('sendMessage', (data, callback) => {
+      const roomId = socket.currentRoom;
 
-}
+      if (!roomId) {
+        if (callback) callback({ success: false, error: "Not in any room" });
+        return;
+      }
+
+      socket.to(roomId).emit('receiveMessage', {
+        userId: data.userId,
+        avatar: data.avatar,
+        message: data.message,
+        timestamp: new Date()
+      });
+
+      if (callback) callback({ success: true, roomId });
+    });
+};
+

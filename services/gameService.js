@@ -1,4 +1,5 @@
 const redisService = require('./redisService');
+const getWords = require('../utils/getWords');
 
 module.exports = {
     async processWord(userId, roomId, word) {

@@ -2,12 +2,12 @@ const gameService = require('../services/gameService');
 
 module.exports = (io, socket) => {
     // User finished a word
-    socket.on('word_finished', async ({ roomId, word }, cb) => {
+    socket.on('finishWord', async ({ roomId, word }, cb) => {
         try {
             const result = await gameService.processWord(socket.id, roomId, word);
 
             // Notify everyone else in the room
-            socket.to(roomId).emit('game_update', {
+            socket.to(roomId).emit('gameStateUpdated', {
                 userId: socket.id,
                 ...result
             });
