@@ -1,4 +1,4 @@
-module.exports = async function getPhrases(qunatity, title, language = "eng") {
+module.exports = async function getWords(qunatity, title, language = "eng") {
 
     const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exsentences=${qunatity}&exlimit=1&titles=${title}&explaintext=1&format=json&formatversion=2&origin=*`)
     const data = await res.json();
@@ -6,6 +6,7 @@ module.exports = async function getPhrases(qunatity, title, language = "eng") {
     const words = text.match(/[A-Za-z0-9\u0600-\u06FF]+/g);
 
     const shuffledWords = shuffleArray(words);
+    const uniqueWords = [...new Set(shuffledWords)];
 
-    return shuffledWords;
+    return uniqueWords;
 }

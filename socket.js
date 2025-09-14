@@ -4,6 +4,7 @@ const {Server}= require('socket.io');
 const {createClient}= require('redis')
 const redisService = require('./services/redisService');
 
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server,{
@@ -36,6 +37,12 @@ io.on('connection',async (socket) => {
         console.log(`user with email <${email}> joined room <${roomId}>`);
         socket.currentRoom = roomId;
         socket.to(roomId).emit('userReconnected', { userId : socket.userId, roomId });
+        // notify the members of the room that a member joined them
+        const data = await redisService.getUserProgress(roomId, socket.userId);
+        socket.to(roomId).emit('userJoined',{
+            userId: socket.userId,
+            avatar: data.avatar
+        })
     }
 
     roomHandlers(io, socket);
