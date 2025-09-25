@@ -42,6 +42,7 @@ module.exports = {
         // Now delete the users set and words
         await redisClient.del(`game:${roomId}:users`);
         await redisClient.del(`game:${roomId}:words`);
+        await redisClient.del(`game:${roomId}:state`);
         await redisClient.del(`room:expires:${roomId}`)
 
         // Finally remove room from the main set
@@ -50,12 +51,12 @@ module.exports = {
 
     // Store competition words
     async setWords(roomId, words) {
-        await redisClient.set(`game:${roomId}:words`, JSON.stringify(words));
+        await redisClient.set(`game:${roomId}:words`, words);
     },
 
     async getWords(roomId) {
         const data = await redisClient.get(`game:${roomId}:words`);
-        return data ? JSON.parse(data) : null;
+        return data;
     },
 
     // Track users in the room
@@ -95,6 +96,26 @@ module.exports = {
         }
     },
 
+    async areAllUsersReady(roomId) {
+        const userIds = await redisClient.sMembers(`game:${roomId}:users`);
+
+        for (const id of userIds) {
+            const data = await redisClient.hGetAll(`game:${roomId}:users:${id}`);
+            if(data.isReady !== 'true'){
+                return false;
+            }
+        }
+        return true;
+    },
+
+    async updateGameState(roomId, state){
+        await redisClient.set(`game:${roomId}:state`, state);
+    },
+
+    async getGameState(roomId) {
+      const state = await redisClient.get(`game:${roomId}:state`);
+      return state || "idle"; // default to "idle" if not set
+    },
 
     async getRoomUsers(roomId) {
         const userIds = await redisClient.sMembers(`game:${roomId}:users`);
@@ -149,6 +170,12 @@ module.exports = {
       // -1 if the key exists but has no expiration
       // -2 if the key does not exist
       return ttl;
+    },
+
+    async incrementerUserProgress(roomId, userId, isWordCorrect){
+        // Increment correct or wrong directly
+        await redisClient.hIncrBy(`game:${roomId}:users:${userId}`, isWordCorrect ? "correct" : "wrong", 1);
+        await redisClient.hIncrBy(`game:${roomId}:users:${userId}`, "index", 1);
     }
 };
 
