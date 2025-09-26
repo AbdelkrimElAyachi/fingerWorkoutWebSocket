@@ -17,7 +17,7 @@ module.exports = (io, socket) => {
             await redisService.updateUserProgress(roomId, user.id, { index: 0, correct: 0, wrong: 0 });
         }
 
-        io.to(roomId).emit('gameStarted', {roomId, words});
+        io.to(roomId).emit('gameStateUpdate', {roomId, state:"started", words});
 
         // Automatically finish the game after X minutes
         const gameDurationMs = 90 * 1000; // 1.5 minutes in milliseconds
@@ -29,6 +29,11 @@ module.exports = (io, socket) => {
 
     async function finishGame(roomId) {
         try {
+            const roomExists = await redisService.isRoomExists(roomId);
+            if (!roomExists) {
+                console.log(`Room ${roomId} no longer exists, skipping finishGame.`);
+                return;
+            }
             // 1. Set game state to finished
             await redisService.updateGameState(roomId, "finished");
 
@@ -41,7 +46,7 @@ module.exports = (io, socket) => {
             }
 
             // 4. Notify clients that game finished
-            io.to(roomId).emit('gameFinished', { roomId });
+            io.to(roomId).emit('gameStateUpdate', { roomId, state:'finished' });
 
             // 5. Optionally, send updated users to clients
             const updatedUsers = await redisService.getRoomUsers(roomId);
@@ -59,6 +64,12 @@ module.exports = (io, socket) => {
     socket.on("checkGameState", async (roomId, cb) => {
       try {
         const roomId = socket.currentRoom;
+
+        const roomExists = await redisService.isRoomExists(roomId);
+        if (!roomExists) {
+            cb({ success: false, error: "room does not exist" });
+        }
+
         const state = await redisService.getGameState(roomId);
 
         // also fetch words if game started

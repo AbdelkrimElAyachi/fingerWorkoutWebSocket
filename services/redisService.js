@@ -43,6 +43,7 @@ module.exports = {
         await redisClient.del(`game:${roomId}:users`);
         await redisClient.del(`game:${roomId}:words`);
         await redisClient.del(`game:${roomId}:state`);
+        console.log(`deleting game:${roomId}:state`)
         await redisClient.del(`room:expires:${roomId}`)
 
         // Finally remove room from the main set
